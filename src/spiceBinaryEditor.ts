@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
-import { getNonce, getSPICEUtilityPath } from './util';
+import { getNonce, getSPICEUtilityPath, getSpiceComment, saveSpiceComment } from './util';
 import * as cp from 'child_process';
 import { existsSync } from 'fs';
 
@@ -27,16 +27,16 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 		return new SpiceBinaryDocument(uri, fileData, delegate);
 	}
 
-	private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+	private static async readFile(uri: vscode.Uri): Promise<string> {
 		if (uri.scheme === 'untitled') {
-			return new Uint8Array();
+			return '';
 		}
-		return new Uint8Array(await vscode.workspace.fs.readFile(uri));
+		return getSpiceComment(uri.fsPath);
 	}
 
 	private readonly _uri: vscode.Uri;
 
-	private _documentData: Uint8Array;
+	private _documentData: string;
 	private _edits: Array<SpiceBinaryDocument> = [];
 	private _savedEdits: Array<SpiceBinaryDocument> = [];
 
@@ -44,7 +44,7 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 
 	private constructor(
 		uri: vscode.Uri,
-		initialContent: Uint8Array,
+		initialContent: string,
 		delegate: spiceBinaryDocumentDelegate
 	) {
 		super();
@@ -55,7 +55,7 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 
 	public get uri() { return this._uri; }
 
-	public get documentData(): Uint8Array { return this._documentData; }
+	public get documentData(): string { return this._documentData; }
 
 	private readonly _onDidDispose = this._register(new vscode.EventEmitter<void>());
 	/**
@@ -64,7 +64,7 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 	public readonly onDidDispose = this._onDidDispose.event;
 
 	private readonly _onDidChangeDocument = this._register(new vscode.EventEmitter<{
-		readonly content?: Uint8Array;
+		readonly content?: string;
 	}>());
 	/**
 	 * Fired to notify webviews that the document has changed.
@@ -98,19 +98,14 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 	 * Called by VS Code when the user saves the document.
 	 */
 	async save(cancellation: vscode.CancellationToken): Promise<void> {
-		await this.saveAs(this.uri, cancellation);
-		this._savedEdits = Array.from(this._edits);
+		vscode.window.showErrorMessage('SPICE binary save not implemented');
 	}
 
 	/**
 	 * Called by VS Code when the user saves the document to a new location.
 	 */
 	async saveAs(targetResource: vscode.Uri, cancellation: vscode.CancellationToken): Promise<void> {
-		const fileData = await this._delegate.getFileData();
-		if (cancellation.isCancellationRequested) {
-			return;
-		}
-		await vscode.workspace.fs.writeFile(targetResource, fileData);
+		vscode.window.showErrorMessage('SPICE binary save not implemented');
 	}
 
 	/**
@@ -131,7 +126,7 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 	 * These backups are used to implement hot exit.
 	 */
 	async backup(destination: vscode.Uri, cancellation: vscode.CancellationToken): Promise<vscode.CustomDocumentBackup> {
-		await this.saveAs(destination, cancellation);
+		// await this.saveAs(destination, cancellation);
 
 		return {
 			id: destination.toString(),
@@ -242,40 +237,7 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 			enableScripts: true,
 		};
 
-		const utilitySPICEPath = getSPICEUtilityPath();
-		console.log(`Utility path: ${utilitySPICEPath}`);
-		let content = '';
-
-		if (!existsSync(utilitySPICEPath + '/commnt')) {
-			content = `
-SPICE Viewer not configured!                            
-========================================================
-Please, ensure to setup properly the SPICE utility path.
-                                                        
-Vscode-spice: Spice Utilities Path                      
-Path to the folder containing the SPICE utilities.      
-                                                        
-Get commnt from:                                        
-https://naif.jpl.nasa.gov/naif/utilities.html           
-`;
-		} else {
-			const commandLine = './commnt -r ' + document.uri.fsPath;
-			console.log(`Exec-> ${commandLine}`);
-			try {
-				const { stdout, stderr } = await this.exec(commandLine, { 
-					cwd: utilitySPICEPath
-				});
-				
-				if (stdout) {
-					content = stdout;
-				}
-			} catch (err: any) {
-				content = 'commnt cannot be executed'
-			}
-		}
-
-
-		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, content);
+		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
 		webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
@@ -289,7 +251,6 @@ https://naif.jpl.nasa.gov/naif/utilities.html
 					});
 				} else {
 					const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
-
 					this.postMessage(webviewPanel, 'init', {
 						value: document.documentData,
 						editable,
@@ -302,7 +263,7 @@ https://naif.jpl.nasa.gov/naif/utilities.html
 	private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<SpiceBinaryDocument>>();
 	public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
-	public saveCustomDocument(document: SpiceBinaryDocument, cancellation: vscode.CancellationToken): Thenable<void> {
+	public saveCustomDocument(document: SpiceBinaryDocument, cancellation: vscode.CancellationToken): Thenable<void> { 
 		return document.save(cancellation);
 	}
 
@@ -323,8 +284,17 @@ https://naif.jpl.nasa.gov/naif/utilities.html
 	/**
 	 * Get the static HTML used for in our editor's webviews.
 	 */
-	private getHtmlForWebview(webview: vscode.Webview, content: string): string {
+	private getHtmlForWebview(webview: vscode.Webview): string {
+
+		// Local path to script and css for the webview
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this._context.extensionUri, 'media', 'spice_editor.js'));
 		
+		const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this._context.extensionUri, 'media', 'reset.css'));
+
+		const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this._context.extensionUri, 'media', 'vscode.css'));
 
 		// Use a nonce to whitelist which scripts can be run
 		const nonce = getNonce();
@@ -340,16 +310,21 @@ https://naif.jpl.nasa.gov/naif/utilities.html
 				and only allow scripts that have a specific nonce.
 				-->
 				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+				<link href="${styleResetUri}" rel="stylesheet" />
+				<link href="${styleVSCodeUri}" rel="stylesheet" />
 
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
 				<title>SPICE Binary file</title>
 			</head>
 			<body>
-			<pre>
-				${content}
-			</pre>
+			<div class="notes">
+				<div class="add-button">
+					<button id="save">Save</button>
+				</div>
+			</div>
+			<div id="editor" contenteditable></div>
+			
+			<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
 			</html>`;
 	}
@@ -370,25 +345,32 @@ https://naif.jpl.nasa.gov/naif/utilities.html
 
 	private onMessage(document: SpiceBinaryDocument, message: any) {
 		switch (message.type) {
+			case 'ready':
+				{
+					console.log(message);
+				}
 			case 'response':
 				{
 					const callback = this._callbacks.get(message.requestId);
 					callback?.(message.body);
 					return;
 				}
+			case 'update-comment':
+				{
+					const content = message.body.value;
+					const binaryPath = document.uri.fsPath;
+					const promise = saveSpiceComment(binaryPath, content);
+					promise.then((result)=> {
+						if (result) {
+							vscode.window.showInformationMessage('Comment updated!');
+						} else {
+							vscode.window.showErrorMessage('The comment cannot be updated');
+						}
+					})
+				}
 		}
 	}
 
-	private exec(command: string, options: cp.ExecOptions): Promise<{ stdout: string; stderr: string }> {
-		return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-			cp.exec(command, options, (error, stdout, stderr) => {
-				if (error) {
-					reject({ error, stdout, stderr });
-				}
-				resolve({ stdout, stderr });
-			});
-		});
-	}
 }
 
 /**
