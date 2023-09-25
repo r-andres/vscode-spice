@@ -2,7 +2,7 @@
 	"name": "vscode-spice",
 	"displayName": "Visual code Spice extension",
 	"description": "Helpers and extension to manage SPICE kernels in visual code",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "randres",
 	"private": true,
 	"license": "MIT",
@@ -19,6 +19,19 @@
 	"activationEvents": [],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": [
+			{
+				"id": "toolkit",
+				"title": "SPICE utilities",
+				"order": 1,
+				"properties": {
+					"vscode-spice.SpiceUtilitiesPath": {
+						"description": "Path to the folder containing the SPICE utilities. https://naif.jpl.nasa.gov/naif/utilities.html",
+						"type": "string"
+					}
+				}
+			}
+		],
 		"customEditors": [
 			{
 				"viewType": "spiceCustom.binary",

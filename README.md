@@ -1,12 +1,27 @@
 # VSCode SPICE - Helpers for SPICE kernels
 
 
-## Read the comments in a binary kernel
+## Easily reading of the comments of a binary kernel
+
+The extension uses the Naif SPICE ``commnt`` utility.
 
 ### Requirements
 
-- [commnt|https://naif.jpl.nasa.gov/naif/utilities.html] utility available in the computer
+- [commnt](https://naif.jpl.nasa.gov/naif/utilities.html) utility available in the computer
 
 ### Configuring
 
-TBW
+Setup properly the SPICE utility path property ``Vscode-spice: Spice Utilities Path``
+
+The value should be the path to the folder containing the SPICE utilities.
+
+Get commnt from: https://naif.jpl.nasa.gov/naif/utilities.html
+
+## Versions
+
+### 0.0.2
+- Licensing
+- SPICE configuration
+### 0.0.1
+- Initial Version
+- Binary comment extraction

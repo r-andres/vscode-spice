@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
-import { getNonce } from './util';
+import { getNonce, getSPICEUtilityPath } from './util';
 import * as cp from 'child_process';
+import { existsSync } from 'fs';
 
 /**
  * Define the type of edits used in paw draw files.
@@ -146,19 +147,12 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 }
 
 /**
- * Provider for paw draw editors.
+ * Provider for SPICE Binary editors.
  *
- * Paw draw editors are used for `.pawDraw` files, which are just `.png` files with a different file extension.
+ * SPICE Binary editors are used for binary SPICE kernels, they display the comments inside it.
  *
- * This provider demonstrates:
- *
- * - How to implement a custom editor for binary files.
- * - Setting up the initial webview for a custom editor.
- * - Loading scripts and styles in a custom editor.
- * - Communication between VS Code and the custom editor.
- * - Using CustomDocuments to store information that is shared between multiple custom editors.
- * - Implementing save, undo, redo, and revert.
- * - Backing up a custom editor.
+ * Additionally, this provider implements:
+ * - TBW
  */
 export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<SpiceBinaryDocument> {
 
@@ -248,23 +242,37 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 			enableScripts: true,
 		};
 
-		
+		const utilitySPICEPath = getSPICEUtilityPath();
+		console.log(`Utility path: ${utilitySPICEPath}`);
 		let content = '';
-		const commandLine = './commnt -r ' + document.uri.fsPath;
-		console.log(`Exec-> ${commandLine}`)
-		try {
-			const { stdout, stderr } = await this.exec(commandLine, { 
-				cwd: '/Users/randres/software/cspice/exe/'
-			});
-			
-			if (stdout) {
-				content = stdout;
-			}
-		} catch (err: any) {
-			console.log(err)
-			content = 'Algo ha fallado'
-		}
 
+		if (!existsSync(utilitySPICEPath + '/commnt')) {
+			content = `
+SPICE Viewer not configured!                            
+========================================================
+Please, ensure to setup properly the SPICE utility path.
+                                                        
+Vscode-spice: Spice Utilities Path                      
+Path to the folder containing the SPICE utilities.      
+                                                        
+Get commnt from:                                        
+https://naif.jpl.nasa.gov/naif/utilities.html           
+`;
+		} else {
+			const commandLine = './commnt -r ' + document.uri.fsPath;
+			console.log(`Exec-> ${commandLine}`);
+			try {
+				const { stdout, stderr } = await this.exec(commandLine, { 
+					cwd: utilitySPICEPath
+				});
+				
+				if (stdout) {
+					content = stdout;
+				}
+			} catch (err: any) {
+				content = 'commnt cannot be executed'
+			}
+		}
 
 
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, content);
