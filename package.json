@@ -39,6 +39,12 @@
 				"selector": [
 					{
 						"filenamePattern": "*.bsp"
+					},
+					{
+						"filenamePattern": "*.bds"
+					},
+					{
+						"filenamePattern": "*.bpc"
 					}
 				]
 			}

@@ -95,3 +95,10 @@ textarea::placeholder {
 	font-family: monospace;
 	padding: 10px;
 }
+
+#briefEditor {
+	white-space: pre;
+	font-family: monospace;
+	padding: 10px;
+	background-color: wheat;
+}

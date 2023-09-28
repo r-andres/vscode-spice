@@ -19,6 +19,8 @@ Get commnt from: https://naif.jpl.nasa.gov/naif/utilities.html
 
 ## Versions
 
+### 0.0.4
+- Brief/Commnt
 ### 0.0.3
 - Save comments
 ### 0.0.2

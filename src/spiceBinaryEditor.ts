@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
-import { getNonce, getSPICEUtilityPath, getSpiceComment, saveSpiceComment } from './util';
+import { getNonce, getSPICEUtilityPath, getSpiceBrief, getSpiceComment, getSpiceInfo, saveSpiceComment } from './util';
 import * as cp from 'child_process';
 import { existsSync } from 'fs';
 
@@ -23,11 +23,20 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 		delegate: spiceBinaryDocumentDelegate,
 	): Promise<SpiceBinaryDocument | PromiseLike<SpiceBinaryDocument>> {
 		
-		const fileData = await SpiceBinaryDocument.readFile(uri);
-		return new SpiceBinaryDocument(uri, fileData, delegate);
+		const briefData = await SpiceBinaryDocument.getSpiceInfo(uri);
+		const commntData = await SpiceBinaryDocument.getSpiceComment(uri);
+		
+		return new SpiceBinaryDocument(uri, commntData, briefData, delegate);
 	}
 
-	private static async readFile(uri: vscode.Uri): Promise<string> {
+	private static async getSpiceInfo(uri: vscode.Uri): Promise<string> {
+		if (uri.scheme === 'untitled') {
+			return '';
+		}
+		return getSpiceInfo(uri.fsPath);
+	}
+
+	private static async getSpiceComment(uri: vscode.Uri): Promise<string> {
 		if (uri.scheme === 'untitled') {
 			return '';
 		}
@@ -36,7 +45,9 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 
 	private readonly _uri: vscode.Uri;
 
-	private _documentData: string;
+	private _commntData: string;
+	private _briefData: string;
+	
 	private _edits: Array<SpiceBinaryDocument> = [];
 	private _savedEdits: Array<SpiceBinaryDocument> = [];
 
@@ -44,18 +55,22 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 
 	private constructor(
 		uri: vscode.Uri,
-		initialContent: string,
+		commntData: string,
+		briefData: string,
 		delegate: spiceBinaryDocumentDelegate
 	) {
 		super();
 		this._uri = uri;
-		this._documentData = initialContent;
+		this._commntData = commntData;
+		this._briefData = briefData;
 		this._delegate = delegate;
 	}
 
 	public get uri() { return this._uri; }
 
-	public get documentData(): string { return this._documentData; }
+	public get briefData(): string { return this._briefData; }
+	public get commntData(): string { return this._commntData; }
+	
 
 	private readonly _onDidDispose = this._register(new vscode.EventEmitter<void>());
 	/**
@@ -112,11 +127,11 @@ class SpiceBinaryDocument extends Disposable implements vscode.CustomDocument {
 	 * Called by VS Code when the user calls `revert` on a document.
 	 */
 	async revert(_cancellation: vscode.CancellationToken): Promise<void> {
-		const diskContent = await SpiceBinaryDocument.readFile(this.uri);
-		this._documentData = diskContent;
+		const commntData = await SpiceBinaryDocument.getSpiceComment(this.uri);
+		this._commntData = commntData;
 		this._edits = this._savedEdits;
 		this._onDidChangeDocument.fire({
-			content: diskContent
+			content: commntData
 		});
 	}
 
@@ -244,6 +259,7 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 		// Wait for the webview to be properly ready before we init
 		webviewPanel.webview.onDidReceiveMessage(e => {
 			if (e.type === 'ready') {
+
 				if (document.uri.scheme === 'untitled') {
 					this.postMessage(webviewPanel, 'init', {
 						untitled: true,
@@ -252,7 +268,9 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 				} else {
 					const editable = vscode.workspace.fs.isWritableFileSystem(document.uri.scheme);
 					this.postMessage(webviewPanel, 'init', {
-						value: document.documentData,
+						commnt: document.commntData,
+						brief: document.briefData,
+						value: document.commntData,
 						editable,
 					});
 				}
@@ -319,10 +337,13 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 			<body>
 			<div class="notes">
 				<div class="add-button">
-					<button id="save">Save</button>
+					<button id="save">Save Comment</button>
+					<button id="brief">View Brief</button>
+					<button id="commnt">View Comment</button>
 				</div>
 			</div>
 			<div id="editor" contenteditable></div>
+			<div id="briefEditor"></div>
 			
 			<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>
