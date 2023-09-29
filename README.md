@@ -18,7 +18,9 @@ The value should be the path to the folder containing the SPICE utilities.
 Get commnt from: https://naif.jpl.nasa.gov/naif/utilities.html
 
 ## Versions
-
+### 0.0.5
+- CK support
+- Deduce sclk/lsk in bundle
 ### 0.0.4
 - Brief/Commnt
 ### 0.0.3

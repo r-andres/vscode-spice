@@ -45,7 +45,11 @@
 					},
 					{
 						"filenamePattern": "*.bpc"
+					},
+					{
+						"filenamePattern": "*.bc"
 					}
+
 				]
 			}
 		]

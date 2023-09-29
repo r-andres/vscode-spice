@@ -1,4 +1,6 @@
-import { existsSync, writeFileSync, mkdtempSync, rmSync, readFileSync } from 'fs';
+import {existsSync, writeFileSync, 
+	    mkdtempSync, rmSync, 
+		readdirSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -117,6 +119,8 @@ export async function getSpiceInfo(path: string): Promise<string> {
 		return getSpiceBrief(path);
 	} else if (path.toLowerCase().endsWith('.bds')) {
 		return getSpiceDskBrief(path);
+	} else if (path.toLowerCase().endsWith('.bc')) {
+		return getSpiceCkBrief(path);
 	} 
 	return new Promise<string>((resolve, reject) => {
 		resolve('Extension not supported');
@@ -176,6 +180,35 @@ export async function getSpiceDskBrief(bspPath: string): Promise<string> {
 
 }
 
+export async function getSpiceCkBrief(filePath: string): Promise<string> {
+
+	const utilitySPICEPath = getSPICEUtilityPath();
+	console.log(`Utility path: ${utilitySPICEPath}`);
+	let content = '';
+
+
+	const lskFile = search_latest(filePath, 'lsk', 'naif.*tls')
+	const sclkFile = search_latest(filePath, 'sclk', '.*tsc')
+
+
+	if (!existsSync(utilitySPICEPath + '/ckbrief')) {
+		content = SPICE_NOT_CONFIGURED_MESSAGE;
+	} else {
+		const commandLine = `./ckbrief ${filePath} ${lskFile} ${sclkFile}`;
+		console.log(`Exec-> ${commandLine}`);
+		try {
+			const { stdout, stderr } = await exec(commandLine, { 
+				cwd: utilitySPICEPath
+			});
+			content = stdout;
+		} catch (err: any) {
+			content = 'commnt cannot be executed'
+		}
+	}
+	return content;
+
+}
+
 
 async function exec(command: string, options: cp.ExecOptions): Promise<{ stdout: string; stderr: string }> {
 	return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -186,4 +219,26 @@ async function exec(command: string, options: cp.ExecOptions): Promise<{ stdout:
 			resolve({ stdout, stderr });
 		});
 	});
+}
+
+function search_latest(filePath: string, folder: string, pattern: string): string {
+
+	const parentPath = path.resolve(path.dirname(filePath), '..');
+	const root = path.join(parentPath, folder);
+
+	if (!existsSync(root)) {
+		console.log( root + ' DOES NOT EXIST')
+		return '';
+	}
+
+	let candidate = ''
+	readdirSync(root).forEach(file => {
+		if (file.match(pattern)) {
+
+			candidate = path.join(root, file);
+		}
+		console.log(file)
+	});
+    console.log(' Not lsk candidate for ' + pattern)
+	return candidate;
 }
