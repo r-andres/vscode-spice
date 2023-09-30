@@ -54,6 +54,7 @@ button {
 	color: var(--vscode-button-foreground);
 	background: var(--vscode-button-background);
 	margin-bottom: 3px;
+	margin-left: 3px;
 }
 
 button:hover {
@@ -95,11 +96,28 @@ textarea::placeholder {
 	white-space: pre;
 	font-family: monospace;
 	padding: 10px;
+	overflow: scroll;
 }
 
 #briefEditor {
 	white-space: pre;
 	font-family: monospace;
 	padding: 10px;
-	background-color: wheat;
+	overflow: scroll;
+}
+
+#diffEditor {
+	white-space: pre;
+	font-family: monospace;
+	padding: 10px;
+	background-color: rgba(179, 218, 245, 0.121);
+}
+
+#diffResume {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	font-size: small;
+}
+
+.tools {
+	display: flex;
 }

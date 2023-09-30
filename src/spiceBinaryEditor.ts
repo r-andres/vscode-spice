@@ -307,6 +307,9 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 		// Local path to script and css for the webview
 		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(
 			this._context.extensionUri, 'media', 'spice_editor.js'));
+
+		const diffjsUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this._context.extensionUri, 'media', 'diff.js'));
 		
 		const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
 			this._context.extensionUri, 'media', 'reset.css'));
@@ -330,22 +333,36 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} blob:; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
 				<link href="${styleResetUri}" rel="stylesheet" />
 				<link href="${styleVSCodeUri}" rel="stylesheet" />
-
+				<script type="importmap" nonce="${nonce}">
+				{
+					"imports": {
+					"diff": "${diffjsUri}"
+					}
+				}
+				</script>
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<title>SPICE Binary file</title>
 			</head>
 			<body>
 			<div class="notes">
-				<div class="add-button">
+				<div class="tools">
+					<button id="diff">Comment Diffs</button>
 					<button id="save">Save Comment</button>
 					<button id="brief">View Brief</button>
 					<button id="commnt">View Comment</button>
 				</div>
 			</div>
+			<div id="diffSection">
+				<div id="diffTools">
+					<span id="diffResume"></span>
+				</div>
+				<div id="diffEditor"></div>
+			</div>
 			<div id="editor" contenteditable></div>
 			<div id="briefEditor"></div>
 			
-			<script nonce="${nonce}" src="${scriptUri}"></script>
+
+			<script nonce="${nonce}" src="${scriptUri}" type="module"></script>
 			</body>
 			</html>`;
 	}
