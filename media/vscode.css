@@ -121,3 +121,13 @@ textarea::placeholder {
 .tools {
 	display: flex;
 }
+
+del {
+	color: red ;
+	font-size: larger ;
+}
+
+ins {
+	color: green ;
+	font-size: larger ;
+}

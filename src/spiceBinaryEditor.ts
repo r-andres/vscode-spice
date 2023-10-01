@@ -310,6 +310,9 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 
 		const diffjsUri = webview.asWebviewUri(vscode.Uri.joinPath(
 			this._context.extensionUri, 'media', 'diff.js'));
+
+		const htmldiffUri = webview.asWebviewUri(vscode.Uri.joinPath(
+			this._context.extensionUri, 'media', 'htmldiff.js'));
 		
 		const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(
 			this._context.extensionUri, 'media', 'reset.css'));
@@ -336,10 +339,13 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 				<script type="importmap" nonce="${nonce}">
 				{
 					"imports": {
-					"diff": "${diffjsUri}"
+					"diff": "${diffjsUri}",
+					"htmldiff-js": "${htmldiffUri}"
 					}
 				}
 				</script>
+
+				
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<title>SPICE Binary file</title>
 			</head>

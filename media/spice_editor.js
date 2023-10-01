@@ -1,5 +1,11 @@
 // @ts-ignore
 import {config} from 'diff';
+import {htmlDiff} from 'htmldiff-js';
+
+
+const Diff_HtmlDiff = htmlDiff[0].exports.default;
+
+
 
 const JsDiff = config['JsDiff'];
 
@@ -42,7 +48,13 @@ const JsDiff = config['JsDiff'];
 			}
 		}
 
-		showDifferences() {
+		showDifferences () {
+			const edited = this.commntEditor?.innerText;
+			const diffs = new Diff_HtmlDiff(this.original, edited).build();
+			this.display.innerHTML = diffs;
+		}
+
+		showDifferencesOld() {
 
 			this.__cleanUp();
 			
