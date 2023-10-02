@@ -52,9 +52,10 @@ const JsDiff = config['JsDiff'];
 			const edited = this.commntEditor?.innerText;
 			const diffs = new Diff_HtmlDiff(this.original, edited).build();
 			this.display.innerHTML = diffs;
+			this.__showResume('Analyzed with HTMLDiff');
 		}
 
-		showDifferencesOld() {
+		showDifferencesMethod2() {
 
 			this.__cleanUp();
 			
@@ -62,7 +63,7 @@ const JsDiff = config['JsDiff'];
 
 			// @ts-ignore
 			
-			const diff = JsDiff.diffWordsWithSpace(this.original, edited);
+			const diff = JsDiff.diffLines(this.original, edited);
 
 			let added = 0;
 			let removed = 0;
@@ -75,7 +76,7 @@ const JsDiff = config['JsDiff'];
 				  part.removed ? 'red' : 'grey';
 				this.__appendPart(part.value, color);
 			  });
-			  const resume = ` Added ${added} Removed ${removed}`;
+			  const resume = `Analyzed with DiffJs: Added ${added} Removed ${removed}`;
 			  this.__showResume(resume);
 		}
 
@@ -140,6 +141,13 @@ const JsDiff = config['JsDiff'];
 				this.setDiffMode();
 				this.diffEditor.showDifferences();
 			});
+
+			this.diff2Button = document.querySelector('#diff2');
+			// @ts-ignore
+			this.diff2Button?.addEventListener('click', (e) => {
+				this.setDiffMode();
+				this.diffEditor.showDifferencesMethod2();
+			});
 		}
 
 		setCommnt(/** @type {string} */ content) {
@@ -163,6 +171,7 @@ const JsDiff = config['JsDiff'];
 			this.setVisibility(this.briefButton, 'none');
 			this.setVisibility(this.commntButton, 'block');
 			this.setVisibility(this.diffButton, 'none');
+			this.setVisibility(this.diff2Button, 'none');
 		}
 
 		setCommentMode() {
@@ -173,6 +182,7 @@ const JsDiff = config['JsDiff'];
 			this.setVisibility(this.briefButton, 'block');
 			this.setVisibility(this.commntButton, 'none');
 			this.setVisibility(this.diffButton, 'block');
+			this.setVisibility(this.diff2Button, 'block');
 		}
 
 		setDiffMode() {
@@ -183,6 +193,7 @@ const JsDiff = config['JsDiff'];
 			this.setVisibility(this.briefButton, 'none');
 			this.setVisibility(this.commntButton, 'block');
 			this.setVisibility(this.diffButton, 'none');
+			this.setVisibility(this.diff2Button, 'none');
 			
 		}
 

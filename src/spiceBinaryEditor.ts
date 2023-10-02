@@ -352,10 +352,11 @@ export class SpiceBinaryEditorProvider implements vscode.CustomEditorProvider<Sp
 			<body>
 			<div class="notes">
 				<div class="tools">
-					<button id="diff">Comment Diffs</button>
-					<button id="save">Save Comment</button>
+					<button id="diff">Diff Method 1</button>
+					<button id="diff2">Diff Method 2</button>
 					<button id="brief">View Brief</button>
-					<button id="commnt">View Comment</button>
+					<button id="commnt">Edit Comment</button>
+					<button id="save">Save Comment</button>
 				</div>
 			</div>
 			<div id="diffSection">

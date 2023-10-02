@@ -75,6 +75,7 @@ button.secondary:hover {
 	background: var(--vscode-button-secondaryHoverBackground);
 }
 
+
 input:not([type='checkbox']),
 textarea {
 	display: block;
@@ -117,6 +118,17 @@ textarea::placeholder {
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	font-size: small;
 }
+
+#save {
+	background-color: orange;
+	color: white;
+}
+
+#save:hover{
+	background-color: rgba(255, 166, 0, 0.407);
+	color: black;
+}
+
 
 .tools {
 	display: flex;
