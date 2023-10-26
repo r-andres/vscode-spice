@@ -63,7 +63,7 @@ const JsDiff = config['JsDiff'];
 
 			// @ts-ignore
 			
-			const diff = JsDiff.diffLines(this.original, edited);
+			const diff = JsDiff.diffWordsWithSpace(this.original, edited);
 
 			let added = 0;
 			let removed = 0;
@@ -93,11 +93,15 @@ const JsDiff = config['JsDiff'];
 			/** @type {HTMLElement | null} */ briefEditor,
 			/** @type {HTMLElement | null} */ diffEditor
 		) {
-			this.ready = false;
 
+			this.ready = false;
 			this.editable = false;
+			this.lastSaved = '';
 
 			this.commntEditor = commntEditor;
+			this.commntEditor.addEventListener('keyup', () => {
+				this.checkModified();
+			})
 			this.briefEditor = briefEditor;
 			this.diffDiv = diffEditor;
 			this.diffSection = document.querySelector('#diffSection')
@@ -110,44 +114,23 @@ const JsDiff = config['JsDiff'];
 		_initElements() {
 			this.saveButton = document.querySelector('#save');
 			// @ts-ignore
-			this.saveButton?.addEventListener('click', (e) => {
-				const newCommnt = this.commntEditor?.innerText;
-				vscode.postMessage(
-					{ type: 'update-comment',
-					  body: {
-						value: this.commntEditor?.innerText
-					  }
-					}
-				);
-				this.diffEditor.setOriginal(newCommnt);
-				this.setCommentMode();
-			});
+			this.saveButton?.addEventListener('click', () => this.doSave());
 
 			this.briefButton = document.querySelector('#brief');
 			// @ts-ignore
-			this.briefButton?.addEventListener('click', (e) => {
-				this.setBriefMode();
-			});
+			this.briefButton?.addEventListener('click', () => this.setBriefMode());
 
 			this.commntButton = document.querySelector('#commnt');
 			// @ts-ignore
-			this.commntButton?.addEventListener('click', (e) => {
-				this.setCommentMode();
-			});
+			this.commntButton?.addEventListener('click', () => this.setCommentMode());
 			
 			this.diffButton = document.querySelector('#diff');
 			// @ts-ignore
-			this.diffButton?.addEventListener('click', (e) => {
-				this.setDiffMode();
-				this.diffEditor.showDifferences();
-			});
-
-			this.diff2Button = document.querySelector('#diff2');
+			this.diffButton?.addEventListener('click', () => this.doDiff());
+			
+			this.resetButton = document.querySelector('#reset');
 			// @ts-ignore
-			this.diff2Button?.addEventListener('click', (e) => {
-				this.setDiffMode();
-				this.diffEditor.showDifferencesMethod2();
-			});
+			this.resetButton?.addEventListener('click', () => this.doReset());
 		}
 
 		setCommnt(/** @type {string} */ content) {
@@ -155,6 +138,7 @@ const JsDiff = config['JsDiff'];
 				this.commntEditor.innerHTML = content;
 			}
 			this.diffEditor.setOriginal(content);
+			this.lastSaved = content;
 		}
 
 		setBrief(/** @type {string} */ content) {
@@ -164,43 +148,80 @@ const JsDiff = config['JsDiff'];
 		}
 
 		setBriefMode() {
-			this.setVisibility(this.briefEditor, 'block');
-			this.setVisibility(this.commntEditor, 'none');
-			this.setVisibility(this.diffSection, 'none');
-			this.setVisibility(this.saveButton, 'none');
-			this.setVisibility(this.briefButton, 'none');
-			this.setVisibility(this.commntButton, 'block');
-			this.setVisibility(this.diffButton, 'none');
-			this.setVisibility(this.diff2Button, 'none');
+			this.setVisible(this.briefEditor, true);
+			this.setVisible(this.commntButton, true);
+
+			this.setVisible(this.commntEditor, false);
+			this.setVisible(this.diffSection, false);
+			this.setVisible(this.saveButton, false);
+			this.setVisible(this.briefButton, false);
+			this.setVisible(this.diffButton, false);
+			this.setVisible(this.resetButton, false);
 		}
 
 		setCommentMode() {
-			this.setVisibility(this.briefEditor, 'none');
-			this.setVisibility(this.commntEditor, 'block');
-			this.setVisibility(this.diffSection, 'none');
-			this.setVisibility(this.saveButton, 'none');
-			this.setVisibility(this.briefButton, 'block');
-			this.setVisibility(this.commntButton, 'none');
-			this.setVisibility(this.diffButton, 'block');
-			this.setVisibility(this.diff2Button, 'block');
+			
+			this.setVisible(this.commntEditor, true);
+			this.setVisible(this.briefButton, true);
+
+			this.setVisible(this.briefEditor, false);
+			this.setVisible(this.diffSection, false);
+			this.setVisible(this.saveButton, false);
+			this.setVisible(this.commntButton, false);
+
+			this.checkModified();
 		}
 
 		setDiffMode() {
-			this.setVisibility(this.briefEditor, 'none');
-			this.setVisibility(this.commntEditor, 'none');
-			this.setVisibility(this.diffSection, 'block');
-			this.setVisibility(this.saveButton, 'block');
-			this.setVisibility(this.briefButton, 'none');
-			this.setVisibility(this.commntButton, 'block');
-			this.setVisibility(this.diffButton, 'none');
-			this.setVisibility(this.diff2Button, 'none');
+
+			this.setVisible(this.briefEditor, false);
+			this.setVisible(this.commntEditor, false);
+			this.setVisible(this.diffSection, true);
+			this.setVisible(this.saveButton, true);
+			this.setVisible(this.briefButton, false);
+			this.setVisible(this.commntButton, true);
+			this.setVisible(this.diffButton, false);
+			this.setVisible(this.resetButton, false);
 			
 		}
 
-		setVisibility(element, visibility) {
+		setVisible(element, visible) {
+			const displayMode = visible ? 'block' : 'none';
 			if (element != null ) {
-				element.style.display = visibility;
+				element.style.display = displayMode;
 			}
+		}
+
+		checkModified() {
+			const modified = this.commntEditor.innerText !== this.lastSaved;
+			this.setVisible(this.diffButton, modified);
+			this.setVisible(this.resetButton, modified);
+		}
+
+		doReset() {
+			if (this.commntEditor) {
+				this.commntEditor.innerText = this.lastSaved;
+			}
+			this.checkModified();
+		}
+
+		doDiff() {
+			this.setDiffMode();
+			this.diffEditor.showDifferencesMethod2();
+		}
+
+		doSave() {
+			const editorContent = this.commntEditor?.innerText;
+			vscode.postMessage(
+				{ type: 'update-comment',
+				  body: {
+					value: editorContent
+				  }
+				}
+			);
+			this.lastSaved = editorContent;
+			this.diffEditor.setOriginal(editorContent);
+			this.setCommentMode();
 		}
 	}
 

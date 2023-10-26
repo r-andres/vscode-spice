@@ -2,7 +2,7 @@
 	"name": "vscode-spice",
 	"displayName": "Visual code Spice extension",
 	"description": "Helpers and extension to manage SPICE kernels in visual code",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"publisher": "randres",
 	"private": true,
 	"license": "MIT",
